@@ -2,6 +2,9 @@
 
 ***AI is in the palm of your hands***
 
+<img width="432" alt="image" src="https://github.com/user-attachments/assets/8bf5a721-6b41-4780-80cb-878dc496f9ac" />
+
+
 Large Language Models (LLMs) like OpenAI’s ChatGPT typically require a CUDA-capable GPU or an Apple Silicon Mac with substantial memory to run locally. However, in recent years, edge LLM modules designed for embedded microcontrollers have emerged.
 
 In this article, we’ll explore how to combine M5Stack’s credit card-sized computer with a keyboard, Cardputer, and a ModuleLLM capable of running local LLMs. Together, they enable a "palm-sized device running a local LLM."
@@ -19,12 +22,14 @@ https://x.com/GOROman/status/1883032143884103767
 
 First, get the ModuleLLM (LLM module). It’s currently sold out at the official distributor, Switch Science, and M5Stack’s official store. I managed to snag the last one from Aliexpress. Production might resume after the Lunar New Year, so stock could return around March. Alternatively, you might find someone who bought it impulsively but doesn’t know how to use it and persuade them to sell it.
 
+- [ModuleLLM](https://docs.m5stack.com/en/module/Module-LLM)
 - [ModuleLLM - Switch Science](https://www.switch-science.com/products/10034)
 
 ### Cardputer
 
 Next, get a Cardputer. Fortunately, its stock recently replenished.
 
+- [Cardputer](https://docs.m5stack.com/en/core/Cardputer)
 - [Cardputer - Switch Science](https://www.switch-science.com/products/9277)
 
 ## Step 1: Disassembly
