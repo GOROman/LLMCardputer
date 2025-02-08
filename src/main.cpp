@@ -39,6 +39,16 @@ static bool task_llm_ready = false;
 /** @brief LLMの回答完了フラグ */
 static bool end_flag = false;
 
+/** @brief エラーログの最大保持数 */
+static const int MAX_ERROR_LOGS = 5;
+
+/** @brief エラーログ */
+static String error_logs[MAX_ERROR_LOGS];
+/** @brief エラーログのインデックス */
+static int error_log_index = 0;
+/** @brief エラーログの表示フラグ */
+static bool show_error_log = false;
+
 /** @brief 描画用キャンバス */
 static M5Canvas canvas(&M5Cardputer.Display);
 
@@ -55,21 +65,73 @@ static void beep()
 }
 
 /**
- * @brief エラーメッセージを表示
- * @param msg 表示するメッセージ
- * @details 赤背景でメッセージを表示し、エラー音を鳴らす
+ * @brief エラーログにメッセージを追加
+ * @param msg エラーメッセージ
+ * @param retry リトライ処理を行うかどうか
+ * @return リトライ処理の結果 (リトライしない場合は常にtrue)
  */
-static void error_message(String msg)
+static bool error_message(String msg, bool retry = false)
 {
+  // エラーログに追加
+  error_logs[error_log_index] = "[" + String(millis()/1000) + "s] " + msg;
+  error_log_index = (error_log_index + 1) % MAX_ERROR_LOGS;
+
+  // エラー表示
   portENTER_CRITICAL_ISR(&display_mutex);
   canvas.setTextColor(WHITE, RED);
-  canvas.println(msg);
+  canvas.println("Error: " + msg);
+  if (retry) {
+    canvas.println("Retrying...");
+  }
   canvas.setTextColor(WHITE, BLACK);
   canvas.pushSprite(4, 4);
   portEXIT_CRITICAL_ISR(&display_mutex);
 
   M5Cardputer.Speaker.tone(440, 800); // Error
   delay(1000);
+
+  // リトライ処理
+  if (retry) {
+    for (int i = 0; i < 3; i++) { // 最大3回リトライ
+      if (module_llm.checkConnection()) {
+        portENTER_CRITICAL_ISR(&display_mutex);
+        canvas.setTextColor(GREEN);
+        canvas.println("Retry successful");
+        canvas.setTextColor(WHITE, BLACK);
+        canvas.pushSprite(4, 4);
+        portEXIT_CRITICAL_ISR(&display_mutex);
+        return true;
+      }
+      delay(1000);
+    }
+    portENTER_CRITICAL_ISR(&display_mutex);
+    canvas.setTextColor(WHITE, RED);
+    canvas.println("Retry failed");
+    canvas.setTextColor(WHITE, BLACK);
+    canvas.pushSprite(4, 4);
+    portEXIT_CRITICAL_ISR(&display_mutex);
+    return false;
+  }
+  return true;
+}
+
+/**
+ * @brief エラーログを表示
+ */
+static void show_error_logs()
+{
+  portENTER_CRITICAL_ISR(&display_mutex);
+  canvas.setTextColor(WHITE, RED);
+  canvas.println("=== Error Logs ===");
+  for (int i = 0; i < MAX_ERROR_LOGS; i++) {
+    if (error_logs[i].length() > 0) {
+      canvas.println(error_logs[i]);
+    }
+  }
+  canvas.println("================");
+  canvas.setTextColor(WHITE, BLACK);
+  canvas.pushSprite(4, 4);
+  portEXIT_CRITICAL_ISR(&display_mutex);
 }
 
 /**
@@ -103,8 +165,9 @@ static void LLM_setup(String lang)
   int err = module_llm.sys.reset();
   if (err != MODULE_LLM_OK)
   {
-    error_message("Error: Reset LLM failed");
-    return;
+    if (!error_message("Reset LLM failed", true)) {
+      return;
+    }
   }
 
   // Setup LLM
@@ -117,7 +180,7 @@ static void LLM_setup(String lang)
     {
       llm_config.model = MODEL;
     }
-    llm_config.max_token_len = 1023;
+    llm_config.max_token_len = MAX_TOKEN_LENGTH;
 
     if (lang == "en")
     {
@@ -131,9 +194,10 @@ static void LLM_setup(String lang)
     llm_work_id = module_llm.llm.setup(llm_config);
     if (llm_work_id == "")
     {
-      error_message("Error: Setup LLM failed");
-      delay(500);
-      continue;
+      if (!error_message("Setup LLM failed", true)) {
+        delay(500);
+        continue;
+      }
     }
     system_message("LLM Work ID:" + llm_work_id);
     break;
@@ -178,11 +242,57 @@ void task_llm(void *pvParameters)
  * @param question 質問文
  * @details LLMに質問を送信し、非同期で回答を受け取る
  */
+/**
+ * @brief プログレスバーを表示
+ * @param progress 進捗率(0-100)
+ */
+static void show_progress(int progress)
+{
+  const int BAR_WIDTH = M5Cardputer.Display.width() - 40;
+  const int BAR_HEIGHT = 10;
+  const int BAR_X = 20;
+  const int BAR_Y = M5Cardputer.Display.height() - 20;
+
+  portENTER_CRITICAL_ISR(&display_mutex);
+  M5Cardputer.Display.fillRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, BLACK);
+  M5Cardputer.Display.drawRect(BAR_X, BAR_Y, BAR_WIDTH, BAR_HEIGHT, WHITE);
+  if (progress > 0) {
+    int width = (BAR_WIDTH - 2) * progress / 100;
+    M5Cardputer.Display.fillRect(BAR_X + 1, BAR_Y + 1, width, BAR_HEIGHT - 2, CYAN);
+  }
+  portEXIT_CRITICAL_ISR(&display_mutex);
+}
+
 void talk(String question)
 {
+  unsigned long start_time = millis();
+  bool timeout = false;
+  int progress = 0;
+
   // Push question to LLM module and wait inference result
-  module_llm.llm.inferenceAndWaitResult(llm_work_id, question.c_str(), [](String &result)
-                                        { answer += result; }, 2000, "llm_inference");
+  module_llm.llm.inferenceAndWaitResult(
+    llm_work_id, 
+    question.c_str(), 
+    [&start_time, &timeout, &progress](String &result) {
+      if (millis() - start_time > LLM_TIMEOUT) {
+        timeout = true;
+        return;
+      }
+      answer += result;
+      progress = min(95, progress + 5);  // 最大95%まで
+      show_progress(progress);
+    }, 
+    2000, 
+    "llm_inference"
+  );
+
+  if (timeout) {
+    error_message("LLM response timeout", false);
+    show_progress(0);  // プログレスバーをクリア
+    return;
+  }
+
+  show_progress(100);  // 完了
   end_flag = true;
 }
 
@@ -357,18 +467,57 @@ void loop()
     {
       Keyboard_Class::KeysState status = M5Cardputer.Keyboard.keysState();
 
-      for (auto i : status.word)
+      // 特殊キーの処理
+      if (status.fn)
       {
-        M5.Speaker.tone(880, 100);
-        data += i;
+        // Fn + L: エラーログ表示
+        bool hasL = false;
+        for (auto c : status.word) {
+          if (c == 'L') {
+            hasL = true;
+            break;
+          }
+        }
+        if (hasL) {
+          show_error_logs();
+          return;
+        }
+
+        // Fn + C: 画面クリア
+        bool hasC = false;
+        for (auto c : status.word) {
+          if (c == 'C') {
+            hasC = true;
+            break;
+          }
+        }
+        if (hasC) {
+          clear();
+          return;
+        }
+      }
+      else
+      {
+        // 通常の文字入力
+        for (auto i : status.word)
+        {
+          // 入力バッファのサイズ制限
+          if (data.length() >= MAX_INPUT_LENGTH)
+          {
+            error_message("Input buffer full", false);
+            return;
+          }
+          data += i;
+        }
       }
 
-      if (status.del)
+      // バックスペース
+      if (status.del && data.length() > 1)  // '>' は削除しない
       {
-        M5.Speaker.tone(440, 100);
         data.remove(data.length() - 1);
       }
 
+      // エンターキー
       if (status.enter)
       {
         sound_play_SE(SOUND_SE_START);

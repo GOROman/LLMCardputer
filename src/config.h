@@ -32,6 +32,22 @@
 const int SOUND_VOLUME = 100;
 
 /**
+ * @brief LLMの最大トークン数
+ * @details 生成される応答の最大トークン数
+ */
+const int MAX_TOKEN_LENGTH = 1023;
+
+/**
+ * @brief LLMの応答タイムアウト時間(ms)
+ */
+const int LLM_TIMEOUT = 30000;  // 30秒
+
+/**
+ * @brief 入力バッファの最大サイズ
+ */
+const int MAX_INPUT_LENGTH = 256;
+
+/**
  * @brief 使用するLLMモデルの設定
  * @details 
  * - NULL: デフォルトモデルを使用
