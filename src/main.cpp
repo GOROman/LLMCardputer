@@ -81,11 +81,13 @@ static void error_message(String msg)
 static void system_message(String msg, bool lf = true)
 {
   portENTER_CRITICAL_ISR(&display_mutex);
+  // 背景を暗いシアンで塗りつぶし
   M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 28,
                                M5Cardputer.Display.width(), 28,
-                               BLACK);
+                               M5Cardputer.Display.color565(0, 32, 32));
 
-  M5Cardputer.Display.setTextColor(CYAN);
+  // 明るいシアンで文字を表示
+  M5Cardputer.Display.setTextColor(M5Cardputer.Display.color565(0, 255, 255));
   M5Cardputer.Display.drawString(msg, 4,
                                  M5Cardputer.Display.height() - 24);
 
@@ -279,6 +281,7 @@ void setup()
   canvas.createSprite(M5Cardputer.Display.width() - 8,
                       M5Cardputer.Display.height() - 36);
   canvas.setTextScroll(true);
+  canvas.setTextWrap(true, true); // 単語単位での折り返し
   canvas.pushSprite(4, 4);
   M5Cardputer.Display.drawString(data, 4, M5Cardputer.Display.height() - 24);
   M5Cardputer.Display.endWrite();
@@ -359,14 +362,18 @@ void loop()
 
       for (auto i : status.word)
       {
-        M5.Speaker.tone(880, 100);
+        // キーごとにランダムな音程で音を鳴らす(三角波)
+        int freq = 440 + (rand() % 440); // 440Hz-880Hz
+        sound_play(SOUND_TRIANGLE, freq, 50);
         data += i;
       }
 
       if (status.del)
       {
-        M5.Speaker.tone(440, 100);
-        data.remove(data.length() - 1);
+        if (data.length() > 1) {  // ">" は残す
+          M5.Speaker.tone(440, 100);
+          data.remove(data.length() - 1);
+        }
       }
 
       if (status.enter)
@@ -393,12 +400,18 @@ void loop()
         data = ">";
       }
 
+      // 入力行の更新
       M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 28,
                                    M5Cardputer.Display.width(), 28,
                                    BLACK);
 
       M5Cardputer.Display.setTextColor(WHITE);
-      M5Cardputer.Display.drawString(data, 4,
+      String display_text = data;
+      // カーソルを点滅表示
+      if (millis() % 1000 < 500) {
+        display_text += "_";
+      }
+      M5Cardputer.Display.drawString(display_text, 4,
                                      M5Cardputer.Display.height() - 24);
     }
   }
