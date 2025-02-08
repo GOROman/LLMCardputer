@@ -250,6 +250,48 @@ void clear()
 }
 
 /**
+ * @brief 起動アニメーションを表示
+ * @details ランダムなパターンと音を使用した起動時のアニメーション効果を表示
+ */
+static void startup_animation()
+{
+  const int W = M5Cardputer.Display.width();
+  const int H = M5Cardputer.Display.height();
+  const int STEP = 20;
+  const uint16_t COLOR[] = {
+      BLACK,
+      M5Cardputer.Display.color565(175, 66, 47),
+      M5Cardputer.Display.color565(139, 227, 77),
+      M5Cardputer.Display.color565(19, 17, 169),
+  };
+  while (!task_llm_ready)
+  {
+    portENTER_CRITICAL_ISR(&display_mutex);
+    M5Cardputer.Display.startWrite();
+    for (int x = 0; x < W; x += STEP)
+    {
+      for (int y = 0; y < H; y += STEP)
+      {
+        int r = rand() % 4;
+
+        uint16_t color = COLOR[r];
+        canvas.fillRect(x, y, STEP, STEP, color);
+      }
+    }
+    canvas.pushSprite(4, 4);
+    M5Cardputer.Display.endWrite();
+    portEXIT_CRITICAL_ISR(&display_mutex);
+
+    // ランダムに S&H 風の音を鳴らす
+    int freq = 400 + rand() % 800;
+    sound_play(SOUND_TRIANGLE, (float)freq, 80);
+
+    vTaskDelay(100);
+  }
+  clear();
+}
+
+/**
  * @brief セットアップ
  * @details デバイスの初期化、タスクの作成、起動アニメーションの表示を行う
  */
@@ -292,41 +334,7 @@ void setup()
   xTaskCreate(
       task_print, "task_print", 4096, NULL, 1, NULL);
  
-  // 起動アニメーション
-  const int W = M5Cardputer.Display.width();
-  const int H = M5Cardputer.Display.height();
-  const int STEP = 20;
-  const uint16_t COLOR[] = {
-      BLACK,
-      M5Cardputer.Display.color565(175, 66, 47),
-      M5Cardputer.Display.color565(139, 227, 77),
-      M5Cardputer.Display.color565(19, 17, 169),
-  };
-  while (!task_llm_ready)
-  {
-    portENTER_CRITICAL_ISR(&display_mutex);
-    M5Cardputer.Display.startWrite();
-    for (int x = 0; x < W; x += STEP)
-    {
-      for (int y = 0; y < H; y += STEP)
-      {
-        int r = rand() % 4;
-
-        uint16_t color = COLOR[r];
-        canvas.fillRect(x, y, STEP, STEP, color);
-      }
-    }
-    canvas.pushSprite(4, 4);
-    M5Cardputer.Display.endWrite();
-    portEXIT_CRITICAL_ISR(&display_mutex);
-
-    // ランダムに S&H 風の音を鳴らす
-    int freq = 400 + rand() % 800;
-    sound_play(SOUND_TRIANGLE, (float)freq, 80);
-
-    vTaskDelay(100);
-  }
-  clear();
+  startup_animation();
 
   canvas.setTextColor(GREEN);
   canvas.pushSprite(4, 4);
