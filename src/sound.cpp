@@ -1,9 +1,24 @@
-// Powered by らびやん
-// https://gist.github.com/lovyan03/19e8a65195f85fbdd415558d149912f6
+/**
+ * @file sound.cpp
+ * @brief M5Cardputer用サウンド機能の実装
+ * @version 0.1
+ * @date 2024-02-08
+ * 
+ * @details
+ * M5Cardputerのスピーカーを使用した音声出力機能を実装します。
+ * 波形データ、メロディーデータ、および音声出力関数を提供します。
+ * 
+ * @note
+ * Original code by らびやん
+ * @see https://gist.github.com/lovyan03/19e8a65195f85fbdd415558d149912f6
+ */
 
 #include "sound.h"
 
-// Square Wave: Duty 50%
+/**
+ * @brief 矩形波のデータ (Duty比50%)
+ * @note 8ステップで1周期を表現
+ */
 static constexpr const uint8_t step_square_wave[] = {
     0,
     0,
@@ -15,7 +30,10 @@ static constexpr const uint8_t step_square_wave[] = {
     127,
 };
 
-// Triangle Wave
+/**
+ * @brief 三角波のデータ
+ * @note 128ステップで1周期を表現
+ */
 static constexpr const uint8_t step_triangle_wave[] = {
     136,
     136,
@@ -147,6 +165,10 @@ static constexpr const uint8_t step_triangle_wave[] = {
     119,
 };
 
+/**
+ * @brief 起動時の効果音データ
+ * @note C4->G4->D4->A4 の順で再生
+ */
 static Note MELODY_SE_START[] = {
     {261, NOTE_32_MS}, // C4 (261.63Hz)
     {0, NOTE_32_MS},   // 休符
@@ -158,6 +180,10 @@ static Note MELODY_SE_START[] = {
     {-1, -1},         // Terminater
 };
 
+/**
+ * @brief 終了時の効果音データ
+ * @note F4->C5->E4->B4->D#4->A4->D4->A4->C#4->G#4->C4->C5->C6 の順で再生
+ */
 static Note MELODY_SE_END[] = {
     {349, NOTE_64_MS}, // F4
     {0, NOTE_64_MS},   // r
@@ -188,12 +214,22 @@ static Note MELODY_SE_END[] = {
     {-1, -1},         // Terminater
 };
 
+/**
+ * @brief 効果音データの配列
+ * @note SOUND_SE 列挙型のインデックスに対応
+ */
 static Note *MELODY_SE_LIST[] = {
     MELODY_SE_START,
     MELODY_SE_END,
 };
 
-// 音を鳴らす(波形種類・周波数・時間)
+/**
+ * @brief 指定した波形、周波数、時間で音を再生する
+ * 
+ * @param type 波形の種類 (SOUND_SQUARE または SOUND_TRIANGLE)
+ * @param freq 周波数 (Hz)
+ * @param duration 再生時間 (ms)
+ */
 void sound_play(const int type, const float freq, const uint32_t duration)
 {
     switch (type)
@@ -209,7 +245,12 @@ void sound_play(const int type, const float freq, const uint32_t duration)
     }
 }
 
-// SE再生
+/**
+ * @brief 指定した効果音(SE)を再生する
+ * 
+ * @param no 効果音の種類 (SOUND_SE_START, SOUND_SE_END, SOUND_SE_TALK)
+ * @note 効果音は三角波を使用して再生されます
+ */
 void sound_play_SE(const SOUND_SE no)
 {
     if (no < 0 || no >= 3)
