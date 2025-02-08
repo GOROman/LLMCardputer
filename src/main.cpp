@@ -28,12 +28,12 @@ void setup() {
     M5Cardputer.Display.setTextSize(0.5);
     M5Cardputer.Display.drawRect(0, 0, M5Cardputer.Display.width(),
                                 M5Cardputer.Display.height() - 28, GREEN);
-    M5Cardputer.Display.setTextFont(&fonts::FreeSerifBoldItalic18pt7b);
+    M5Cardputer.Display.setFont(&fonts::FreeSerifBoldItalic18pt7b);
 
     M5Cardputer.Display.fillRect(0, M5Cardputer.Display.height() - 4,
                                 M5Cardputer.Display.width(), 4, GREEN);
 
-    canvas.setTextFont(&fonts::FreeSerifBoldItalic18pt7b);
+    canvas.setFont(&fonts::FreeSerifBoldItalic18pt7b);
     canvas.setTextSize(0.5);
     canvas.createSprite(M5Cardputer.Display.width() - 8,
                        M5Cardputer.Display.height() - 36);
