@@ -65,8 +65,8 @@ While soldering directly to the board worked for this project, there may be bett
 |-----------------|-----------------|
 | G (Black)       | GND             |
 | 5V (Red)        | 5V              |
-| G2 (Yellow)     | UART (Tx)       |
-| G1 (White)      | UART (Rx)       |
+| G1 (Yellow)     | UART (Tx)       |
+| G2 (White)      | UART (Rx)       |
 
 ![image.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/30621/b6b1f52c-d0f8-157c-7818-986509cff129.png)
 
