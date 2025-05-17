@@ -161,6 +161,7 @@ void task_llm(void *pvParameters)
     {
       break;
     }
+    vTaskDelay(10);
   }
 
   LLM_setup("jp");
