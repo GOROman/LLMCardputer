@@ -199,16 +199,13 @@ void task_print(void *pvParameters)
     String buffer = answer;
     answer = "";
     int count = 0;
+    const char *cstr = buffer.c_str();
 
     for (int i = 0; i < len; i++)
     {
-      // 1文字づつ表示
-      String str = buffer.substring(i, i + 1);
+      char ch = cstr[i];
 
-      if (str == " " || str == "?")
-      {
-      }
-      else
+      if (ch != ' ' && ch != '?')
       {
         count++;
         if (count % 2 == 1)
@@ -221,7 +218,7 @@ void task_print(void *pvParameters)
 
       portENTER_CRITICAL_ISR(&display_mutex);
       canvas.setTextColor(GREEN);
-      canvas.printf("%s", str.c_str());
+      canvas.write(ch);
       canvas.pushSprite(4, 4);
       portEXIT_CRITICAL_ISR(&display_mutex);
     }
