@@ -1,6 +1,6 @@
 # LLMCardputer
 
-[Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/GOROman/LLMCardputer)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/GOROman/LLMCardputer)
 
 ***AI is in the palm of your hands***
 
