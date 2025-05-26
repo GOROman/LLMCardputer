@@ -1,5 +1,7 @@
 # LLMCardputer
 
+[Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/GOROman/LLMCardputer)
+
 ***AI is in the palm of your hands***
 
 <img width="432" alt="image" src="https://github.com/user-attachments/assets/8bf5a721-6b41-4780-80cb-878dc496f9ac" />
