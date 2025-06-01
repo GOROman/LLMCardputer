@@ -215,13 +215,26 @@ static Note MELODY_SE_END[] = {
 };
 
 /**
+ * @brief 会話開始時の効果音データ
+ * @note 短いビープ音を2回再生
+ */
+static Note MELODY_SE_TALK[] = {
+    {880, NOTE_64_MS}, // A5
+    {0, NOTE_64_MS},   // r
+    {880, NOTE_64_MS}, // A5
+    {-1, -1},         // Terminater
+};
+
+/**
  * @brief 効果音データの配列
  * @note SOUND_SE 列挙型のインデックスに対応
  */
 static Note *MELODY_SE_LIST[] = {
     MELODY_SE_START,
     MELODY_SE_END,
+    MELODY_SE_TALK,
 };
+static const size_t MELODY_SE_COUNT = sizeof(MELODY_SE_LIST) / sizeof(MELODY_SE_LIST[0]);
 
 /**
  * @brief 指定した波形、周波数、時間で音を再生する
@@ -253,7 +266,7 @@ void sound_play(const int type, const float freq, const uint32_t duration)
  */
 void sound_play_SE(const SOUND_SE no)
 {
-    if (no < 0 || no >= 3)
+    if (no < 0 || no >= MELODY_SE_COUNT)
     {
         return;
     }
